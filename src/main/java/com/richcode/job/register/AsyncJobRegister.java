@@ -1,48 +1,44 @@
 package com.richcode.job.register;
 
 import com.richcode.job.dto.AsyncJobType;
-import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationContext;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class AsyncJobRegister {
 
     private final static List<AsyncJobRunnable> EMPTY_RUNNERS_LIST = List.of();
+    private final MultiValueMap<AsyncJobType, AsyncJobRunnable> runners = new LinkedMultiValueMap<>();
 
-    private final ApplicationContext context;
-    private final MultiValueMap<AsyncJobType, AsyncJobRunnable> jobRunners = new LinkedMultiValueMap<>();
-
-    @PostConstruct
-    public void init() {
-        context.getBeansWithAnnotation(AsyncJobRunner.class).forEach(this::addRunner);
+    @Autowired
+    public AsyncJobRegister(Collection<AsyncJobRunnable> runners) {
+        runners.forEach(this::addRunner);
     }
 
-    private void addRunner(String beanName, Object bean) {
-        if (!(bean instanceof AsyncJobRunnable)) {
-            throw new IllegalStateException(beanName + " is signed as a AsyncJobRunner but does not implement AsyncJobRunnable interface");
-        }
-        jobRunners.add(findValue(beanName), (AsyncJobRunnable) bean);
-        log.info("Registered async job runner - {}", beanName);
-    }
-
-    private AsyncJobType findValue(String beanName) {
-        return Optional
-            .ofNullable(context.findAnnotationOnBean(beanName, AsyncJobRunner.class))
+    private void addRunner(final AsyncJobRunnable runner) {
+        Optional.ofNullable(AnnotationUtils.findAnnotation(runner.getClass(), AsyncJobRunner.class))
             .map(AsyncJobRunner::value)
-            .orElseThrow();
+            .ifPresentOrElse(
+                type -> addRunner(type, runner),
+                () -> log.warn("Registration of Async Job Runner {} failed: missing @AsyncJobRunner", runner.getClass().getName())
+            );
     }
 
-    public List<AsyncJobRunnable> getJobRunner(final AsyncJobType type) {
-        return jobRunners.getOrDefault(type, EMPTY_RUNNERS_LIST);
+    private void addRunner(final AsyncJobType type, final AsyncJobRunnable runner) {
+        runners.add(type, runner);
+        log.info("Registered Async Job Runner: {} - {}", type, runner.getClass().getName());
+    }
+
+    public synchronized List<AsyncJobRunnable> getJobRunner(final AsyncJobType type) {
+        return List.copyOf(runners.getOrDefault(type, EMPTY_RUNNERS_LIST));
     }
 }
