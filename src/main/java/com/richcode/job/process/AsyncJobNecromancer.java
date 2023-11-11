@@ -5,7 +5,6 @@ import com.richcode.job.dto.AsyncJobSummaryRoughDto;
 import com.richcode.job.dto.AsyncJobType;
 import com.richcode.job.register.AsyncJobRegister;
 import com.richcode.job.repository.AsyncJobSummaryRepository;
-import com.richcode.job.service.AsyncJobService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -23,7 +22,6 @@ import static java.util.stream.Collectors.*;
 class AsyncJobNecromancer {
 
     private final AsyncJobSummaryRepository repository;
-    private final AsyncJobService asyncJobService;
     private final AsyncJobRegister asyncJobRegister;
 
     @EventListener(ApplicationReadyEvent.class)
