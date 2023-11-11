@@ -77,7 +77,6 @@ class AsyncJobSummarySpecifications {
             if (SearchRange.isEmpty(range)) {
                 return missingCriteria();
             }
-
             return criteriaBuilder.between(root.get(AsyncJobSummary_.created), range.from(), range.to());
         };
     }
@@ -87,7 +86,6 @@ class AsyncJobSummarySpecifications {
             if (SearchRange.isEmpty(range)) {
                 return missingCriteria();
             }
-
             return criteriaBuilder.between(root.get(AsyncJobSummary_.updated), range.from(), range.to());
         };
     }
